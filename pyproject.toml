@@ -48,7 +48,7 @@ opentelemetry-instrumentation-cohere = ">=0.48b0"
 opentelemetry-instrumentation-google-generativeai = ">=0.48b0"
 opentelemetry-instrumentation-pinecone = ">=0.48b0"
 opentelemetry-instrumentation-qdrant = ">=0.48b0"
-opentelemetry-instrumentation-langchain = {git = "https://github.com/insightfinder/iftracer-sdk.git", subdirectory = "packages/opentelemetry-instrumentation-langchain"}
+opentelemetry-instrumentation-langchain = ">=0.48b0"
 opentelemetry-instrumentation-chromadb = ">=0.48b0"
 opentelemetry-instrumentation-transformers = ">=0.48b0"
 opentelemetry-instrumentation-together = ">=0.48b0"
