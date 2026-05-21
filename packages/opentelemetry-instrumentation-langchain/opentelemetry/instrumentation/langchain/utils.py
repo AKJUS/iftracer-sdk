@@ -1,10 +1,22 @@
 import dataclasses
+import datetime
+import importlib.util
 import json
 import logging
 import os
 import traceback
+
 from opentelemetry import context as context_api
+from opentelemetry._logs import Logger
 from opentelemetry.instrumentation.langchain.config import Config
+from opentelemetry.semconv._incubating.attributes import (
+    gen_ai_attributes as GenAIAttributes,
+)
+from pydantic import BaseModel
+
+TRACELOOP_TRACE_CONTENT = "TRACELOOP_TRACE_CONTENT"
+
+EVENT_ATTRIBUTES = {GenAIAttributes.GEN_AI_SYSTEM: "langchain"}
 
 
 class CallbackFilteredJSONEncoder(json.JSONEncoder):
@@ -13,30 +25,30 @@ class CallbackFilteredJSONEncoder(json.JSONEncoder):
             if "callbacks" in o:
                 del o["callbacks"]
                 return o
+
         if dataclasses.is_dataclass(o):
             return dataclasses.asdict(o)
 
         if hasattr(o, "to_json"):
             return o.to_json()
 
-        return super().default(o)
+        if isinstance(o, BaseModel) and hasattr(o, "model_dump_json"):
+            return o.model_dump_json()
 
+        if isinstance(o, datetime.datetime):
+            return o.isoformat()
 
-def _with_tracer_wrapper(func):
-    """Helper for providing tracer for wrapper functions."""
-
-    def _with_tracer(tracer, to_wrap):
-        def wrapper(wrapped, instance, args, kwargs):
-            return func(tracer, to_wrap, wrapped, instance, args, kwargs)
-
-        return wrapper
-
-    return _with_tracer
+        try:
+            return str(o)
+        except Exception:
+            logger = logging.getLogger(__name__)
+            logger.debug("Failed to serialize object of type: %s", type(o).__name__)
+            return ""
 
 
 def should_send_prompts():
     return (
-        os.getenv("TRACELOOP_TRACE_CONTENT") or "true"
+        os.getenv(TRACELOOP_TRACE_CONTENT) or "true"
     ).lower() == "true" or context_api.get_value("override_enable_content_tracing")
 
 
@@ -63,3 +75,17 @@ def dont_throw(func):
                 Config.exception_logger(e)
 
     return wrapper
+
+
+def should_emit_events() -> bool:
+    """
+    Checks if the instrumentation isn't using the legacy attributes
+    and if the event logger is not None.
+    """
+    return not Config.use_legacy_attributes and isinstance(
+        Config.event_logger, Logger
+    )
+
+
+def is_package_available(package_name):
+    return importlib.util.find_spec(package_name) is not None
