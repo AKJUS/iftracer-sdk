@@ -23,8 +23,6 @@ INSIGHTFINDER_ENTITY_VECTOR_STORE = ['vectorstore']
 INSIGHTFINDER_ENTITY_DOCS_USED = ['docs_used']
 INSIGHTFINDER_ENTITY_REDIS_URL = ['redis_url','redis']
 INSIGHTFINDER_ENTITY_RAG_CONFIG = ['rag_config']
-INSIGHTFINDER_ENTITY_CHAT_PROMPT = ['summary_prompt', 'input_prompt', 'prompt']
-INSIGHTFINDER_ENTITY_CHAT_RESPONSE = ['summary_answer', 'output_answer', 'answer']
 '''
 Add tags and its value to spans. 
 This method only adds tags to the span with entity name 'trace_model_response'
@@ -122,19 +120,6 @@ def _add_result_traces_to_spans(span: Span, res: Dict[str, Any] , *args, **kwarg
         if hasattr(rag_config, 'model_fields_set') and rag_config.model_fields_set is not None:
             span.set_attribute(SpanAttributes.INSIGHTFINDER_ENTITY_RAG_CONFIG_MODEL_FIELDS_SET, str(rag_config.model_fields_set) )
 
-    # Extract chat.prompt / chat.response from the workflow result object
-    chat_prompt_dict = {key: None for key in INSIGHTFINDER_ENTITY_CHAT_PROMPT}
-    chat_response_dict = {key: None for key in INSIGHTFINDER_ENTITY_CHAT_RESPONSE}
-    _set_res_dict_values([res], chat_prompt_dict, list(INSIGHTFINDER_ENTITY_CHAT_PROMPT))
-    _set_res_dict_values([res], chat_response_dict, list(INSIGHTFINDER_ENTITY_CHAT_RESPONSE))
-
-    chat_prompt = _find_value_from_keys_list(chat_prompt_dict, INSIGHTFINDER_ENTITY_CHAT_PROMPT)
-    if chat_prompt is not None:
-        span.set_attribute("chat.prompt", str(chat_prompt))
-
-    chat_response = _find_value_from_keys_list(chat_response_dict, INSIGHTFINDER_ENTITY_CHAT_RESPONSE)
-    if chat_response is not None:
-        span.set_attribute("chat.response", str(chat_response))
 
 
 '''
